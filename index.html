@@ -194,7 +194,7 @@
             <span>New Chat</span>
         </button>
     </div>
-    <div class="chat-container">
+    <div class="chat-container" id="chatContainer">
         <div class="empty-state" id="emptyState">
             <div class="llama-icon">🦙</div>
         </div>
@@ -258,6 +258,11 @@
             attachedFileName = null;
             document.getElementById('fileBadge').style.display = 'none';
             document.getElementById('fileInput').value = '';
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('chatContainer');
+            container.scrollTop = container.scrollHeight;
         }
 
         async function sendMessage() {
@@ -349,7 +354,7 @@
             contentDiv.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
             messageDiv.appendChild(contentDiv);
             messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            scrollToBottom();
             return messageId;
         }
 
@@ -371,7 +376,7 @@
             contentDiv.textContent = content;
             messageDiv.appendChild(contentDiv);
             messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            scrollToBottom();
             return messageId;
         }
 
@@ -379,7 +384,10 @@
             const element = document.getElementById(messageId);
             if (element) {
                 const contentDiv = element.querySelector('.message-content');
-                contentDiv.textContent = content;
+                if (contentDiv) {
+                    contentDiv.textContent = content;
+                    scrollToBottom();
+                }
             }
         }
 
