@@ -94,3 +94,34 @@ Native git integration for automatic conversation archiving.
 **Maintainer:** Guy Chenya  
 **Project:** AI Chat UI  
 **Last Updated:** 2025-11-20
+
+---
+
+## Enhanced Auto-Save: Zero-Intervention Required
+
+### Smart Project Detection
+**Priority:** CRITICAL  
+**Date:** 2025-11-20
+
+**Core Requirement:**
+System automatically detects current project and saves conversations with ZERO user action.
+
+**How It Should Work:**
+1. Detect git repository in current directory
+2. Auto-create `chat-history/` if needed
+3. Save to `chat-history/YYYY-MM-DD-HHmm.md` on exit
+4. Auto-commit to git
+5. **No prompts, no paths, no user input**
+
+**Example:**
+```bash
+cd ~/my-project
+kiro-cli chat
+# ... work on project ...
+# User exits (Ctrl+D or /quit)
+# ✅ Automatically saved to ~/my-project/chat-history/2025-11-20-2137.md
+# ✅ Automatically committed
+# ✅ User did nothing
+```
+
+**Key Point:** Context-aware, fully automatic, zero friction.
