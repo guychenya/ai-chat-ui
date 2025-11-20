@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Chat</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -403,6 +405,12 @@
             <button class="header-btn" onclick="toggleSidebar()">
                 <span>☰</span>
             </button>
+            <select class="header-btn" onchange="exportChat(this.value)" style="margin-left: auto; cursor: pointer;">
+                <option value="">📥 Export</option>
+                <option value="md">Markdown</option>
+                <option value="txt">Text</option>
+                <option value="pdf">PDF</option>
+            </select>
         </div>
         <div class="chat-container" id="chatContainer">
             <div class="empty-state" id="emptyState">
@@ -686,6 +694,48 @@
             document.querySelectorAll(".typing-indicator-msg").forEach(el => el.remove());
         }
 
+        document.getElementById('messageInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        function exportChat(format) {
+            if (!format) return;
+            const messages = Array.from(document.querySelectorAll('.message:not(.typing-indicator-msg)'));
+            if (messages.length === 0) {
+                alert('No messages to export');
+                return;
+            }
+
+            let content = '';
+            messages.forEach(msg => {
+                const role = msg.classList.contains('user') ? 'User' : 'Assistant';
+                const text = msg.querySelector('.message-content').textContent;
+                if (format === 'md') {
+                    content += `**${role}:**\n\n${text}\n\n---\n\n`;
+                } else {
+                    content += `${role}:\n${text}\n\n`;
+                }
+            });
+
+            if (format === 'pdf') {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                const lines = doc.splitTextToSize(content, 180);
+                doc.text(lines, 10, 10);
+                doc.save('chat-export.pdf');
+            } else {
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `chat-export.${format}`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+            document.querySelector('select').value = '';
+        }
+
         function addMessage(role, content, save = true) {
             const messagesDiv = document.getElementById('messages');
             const messageId = 'msg-' + Date.now();
@@ -694,7 +744,11 @@
             messageDiv.id = messageId;
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
-            contentDiv.textContent = content;
+            if (role === 'assistant') {
+                contentDiv.innerHTML = marked.parse(content);
+            } else {
+                contentDiv.textContent = content;
+            }
             messageDiv.appendChild(contentDiv);
             messagesDiv.appendChild(messageDiv);
             scrollToBottom();
@@ -706,16 +760,11 @@
             if (element) {
                 const contentDiv = element.querySelector('.message-content');
                 if (contentDiv) {
-                    contentDiv.textContent = content;
+                    contentDiv.innerHTML = marked.parse(content);
                     scrollToBottom();
                 }
             }
         }
-
-        document.getElementById('messageInput').addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-        });
 
         updateChatList();
         if (chats.length === 0) {
