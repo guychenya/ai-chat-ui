@@ -507,7 +507,7 @@
                 alert("Cannot delete chat while response is being generated");
                 return;
             }
-            if (!confirm('Delete this chat?')) return;
+            if (!window.confirm('Delete this chat?')) return;
             chats = chats.filter(c => c.id !== chatId);
             localStorage.setItem('chats', JSON.stringify(chats));
             if (currentChatId === chatId) {
