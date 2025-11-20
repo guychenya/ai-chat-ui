@@ -359,6 +359,8 @@
         }
 
         function removeTypingIndicator(typingId) {
+            // Remove all typing indicators to be safe
+            document.querySelectorAll(".typing-indicator").forEach(el => el.closest(".message").remove());
             const element = document.getElementById(typingId);
             if (element) {
                 element.remove();
