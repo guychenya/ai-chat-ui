@@ -84,9 +84,23 @@
             color: #333;
             border: 1px solid #e5e5e5;
         }
-        .message.assistant.loading .message-content {
-            background: #f5f5f5;
-            color: #999;
+        .typing-indicator {
+            display: inline-flex;
+            gap: 4px;
+            padding: 4px 0;
+        }
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #999;
+            animation: typing 1.4s infinite;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.7; }
+            30% { transform: translateY(-10px); opacity: 1; }
         }
         .input-container {
             background: white;
@@ -209,8 +223,7 @@
 
             const sendBtn = document.getElementById('sendBtn');
             sendBtn.disabled = true;
-            const messageId = addMessage('assistant', '', false);
-            const contentDiv = document.getElementById(messageId).querySelector('.message-content');
+            const messageId = addTypingIndicator();
 
             try {
                 const response = await fetch(`${API_URL}/api/chat`, {
@@ -228,6 +241,7 @@
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let fullResponse = '';
+                let firstChunk = true;
 
                 while (true) {
                     const { done, value } = await reader.read();
@@ -240,8 +254,16 @@
                         try {
                             const data = JSON.parse(line);
                             if (data.response) {
-                                fullResponse += data.response;
-                                contentDiv.textContent = fullResponse;
+                                if (firstChunk) {
+                                    document.getElementById(messageId).remove();
+                                    const newMessageId = addMessage('assistant', data.response);
+                                    messageId = newMessageId;
+                                    firstChunk = false;
+                                } else {
+                                    fullResponse += data.response;
+                                    const contentDiv = document.getElementById(messageId).querySelector('.message-content');
+                                    contentDiv.textContent = fullResponse;
+                                }
                             }
                         } catch (e) {
                             // Skip invalid JSON
@@ -249,20 +271,37 @@
                     }
                 }
 
-                if (!fullResponse) {
-                    contentDiv.textContent = 'No response received';
+                if (firstChunk) {
+                    document.getElementById(messageId).remove();
+                    addMessage('assistant', 'No response received');
                 }
             } catch (error) {
-                contentDiv.textContent = 'Error: ' + error.message;
+                document.getElementById(messageId).remove();
+                addMessage('assistant', 'Error: ' + error.message);
             }
             sendBtn.disabled = false;
         }
 
-        function addMessage(role, content, isLoading = false) {
+        function addTypingIndicator() {
             const messagesDiv = document.getElementById('messages');
             const messageId = 'msg-' + Date.now();
             const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${role} ${isLoading ? 'loading' : ''}`;
+            messageDiv.className = 'message assistant';
+            messageDiv.id = messageId;
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+            messageDiv.appendChild(contentDiv);
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            return messageId;
+        }
+
+        function addMessage(role, content) {
+            const messagesDiv = document.getElementById('messages');
+            const messageId = 'msg-' + Date.now();
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
             messageDiv.id = messageId;
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
