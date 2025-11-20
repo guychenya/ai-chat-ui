@@ -223,7 +223,8 @@
 
             const sendBtn = document.getElementById('sendBtn');
             sendBtn.disabled = true;
-            let messageId = addTypingIndicator();
+            
+            const typingId = addTypingIndicator();
 
             try {
                 const response = await fetch(`${API_URL}/api/chat`, {
@@ -241,7 +242,7 @@
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let fullResponse = '';
-                let firstChunk = true;
+                let responseMessageId = null;
 
                 while (true) {
                     const { done, value } = await reader.read();
@@ -256,13 +257,11 @@
                             if (data.response) {
                                 fullResponse += data.response;
                                 
-                                if (firstChunk) {
-                                    document.getElementById(messageId).remove();
-                                    messageId = addMessage('assistant', fullResponse);
-                                    firstChunk = false;
+                                if (!responseMessageId) {
+                                    removeTypingIndicator(typingId);
+                                    responseMessageId = addMessage('assistant', fullResponse);
                                 } else {
-                                    const contentDiv = document.getElementById(messageId).querySelector('.message-content');
-                                    contentDiv.textContent = fullResponse;
+                                    updateMessage(responseMessageId, fullResponse);
                                 }
                             }
                         } catch (e) {
@@ -271,12 +270,12 @@
                     }
                 }
 
-                if (firstChunk) {
-                    document.getElementById(messageId).remove();
+                if (!responseMessageId) {
+                    removeTypingIndicator(typingId);
                     addMessage('assistant', 'No response received');
                 }
             } catch (error) {
-                document.getElementById(messageId).remove();
+                removeTypingIndicator(typingId);
                 addMessage('assistant', 'Error: ' + error.message);
             }
             sendBtn.disabled = false;
@@ -284,7 +283,7 @@
 
         function addTypingIndicator() {
             const messagesDiv = document.getElementById('messages');
-            const messageId = 'msg-' + Date.now();
+            const messageId = 'typing-' + Date.now();
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message assistant';
             messageDiv.id = messageId;
@@ -295,6 +294,13 @@
             messagesDiv.appendChild(messageDiv);
             messagesDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
             return messageId;
+        }
+
+        function removeTypingIndicator(typingId) {
+            const element = document.getElementById(typingId);
+            if (element) {
+                element.remove();
+            }
         }
 
         function addMessage(role, content) {
@@ -310,6 +316,14 @@
             messagesDiv.appendChild(messageDiv);
             messagesDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
             return messageId;
+        }
+
+        function updateMessage(messageId, content) {
+            const element = document.getElementById(messageId);
+            if (element) {
+                const contentDiv = element.querySelector('.message-content');
+                contentDiv.textContent = content;
+            }
         }
 
         document.getElementById('messageInput').addEventListener('input', function() {
