@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset=\"UTF-8\">
-    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Chat</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -258,37 +258,37 @@
     </style>
 </head>
 <body>
-    <div class=\"sidebar\" id=\"sidebar\">
-        <div class=\"sidebar-header\">
-            <button class=\"new-chat-btn\" onclick=\"newChat()\">
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <button class="new-chat-btn" onclick="newChat()">
                 <span>✏️</span>
                 <span>New Chat</span>
             </button>
         </div>
-        <div class=\"chat-list\" id=\"chatList\"></div>
+        <div class="chat-list" id="chatList"></div>
     </div>
-    <div class=\"main-content\">
-        <div class=\"header\">
-            <button class=\"header-btn\" onclick=\"toggleSidebar()\">
+    <div class="main-content">
+        <div class="header">
+            <button class="header-btn" onclick="toggleSidebar()">
                 <span>☰</span>
             </button>
         </div>
-        <div class=\"chat-container\" id=\"chatContainer\">
-            <div class=\"empty-state\" id=\"emptyState\">
-                <div class=\"llama-icon\">🦙</div>
+        <div class="chat-container" id="chatContainer">
+            <div class="empty-state" id="emptyState">
+                <div class="llama-icon">🦙</div>
             </div>
-            <div class=\"messages\" id=\"messages\" style=\"display: none;\"></div>
+            <div class="messages" id="messages" style="display: none;"></div>
         </div>
-        <div class=\"input-container\">
-            <div class=\"input-wrapper\">
-                <textarea class=\"input-field\" id=\"messageInput\" placeholder=\"Send a message\" rows=\"1\" onkeydown=\"handleKeyPress(event)\"></textarea>
-                <input type=\"file\" id=\"fileInput\" class=\"file-input\" accept=\".txt,.md,.json,.csv,.log\" onchange=\"handleFileSelect(event)\">
-                <button class=\"add-btn\" onclick=\"document.getElementById('fileInput').click()\">+</button>
-                <div id=\"fileBadge\" style=\"display: none;\"></div>
-                <select class=\"model-select\" id=\"modelSelect\">
-                    <option value=\"phi3:mini\">phi3:mini</option>
+        <div class="input-container">
+            <div class="input-wrapper">
+                <textarea class="input-field" id="messageInput" placeholder="Send a message" rows="1" onkeydown="handleKeyPress(event)"></textarea>
+                <input type="file" id="fileInput" class="file-input" accept=".txt,.md,.json,.csv,.log" onchange="handleFileSelect(event)">
+                <button class="add-btn" onclick="document.getElementById('fileInput').click()">+</button>
+                <div id="fileBadge" style="display: none;"></div>
+                <select class="model-select" id="modelSelect">
+                    <option value="phi3:mini">phi3:mini</option>
                 </select>
-                <button class=\"send-btn\" id=\"sendBtn\" onclick=\"sendMessage()\">
+                <button class="send-btn" id="sendBtn" onclick="sendMessage()">
                     <span>↑</span>
                 </button>
             </div>
@@ -350,10 +350,14 @@
         function saveCurrentChat() {
             if (!currentChatId) return;
             
-            const messages = Array.from(document.querySelectorAll('.message')).map(el => ({
-                role: el.classList.contains('user') ? 'user' : 'assistant',
-                content: el.querySelector('.message-content').textContent
-            }));
+            const messages = Array.from(document.querySelectorAll('.message:not(.typing-indicator)')).map(el => {
+                const content = el.querySelector('.message-content');
+                if (!content || content.querySelector('.typing-indicator')) return null;
+                return {
+                    role: el.classList.contains('user') ? 'user' : 'assistant',
+                    content: content.textContent
+                };
+            }).filter(m => m !== null);
             
             if (messages.length === 0) return;
             
@@ -381,9 +385,9 @@
         function updateChatList() {
             const chatList = document.getElementById('chatList');
             chatList.innerHTML = chats.map(chat => `
-                <div class=\"chat-item ${chat.id === currentChatId ? 'active' : ''}\" onclick=\"loadChat('${chat.id}')\">
-                    <span class=\"chat-item-title\">${chat.title}</span>
-                    <button class=\"delete-btn\" onclick=\"deleteChat('${chat.id}', event)\">🗑️</button>
+                <div class="chat-item ${chat.id === currentChatId ? 'active' : ''}" onclick="loadChat('${chat.id}')">
+                    <span class="chat-item-title">${chat.title}</span>
+                    <button class="delete-btn" onclick="deleteChat('${chat.id}', event)">🗑️</button>
                 </div>
             `).join('');
         }
@@ -403,7 +407,7 @@
 
         function showFileBadge(fileName) {
             const badge = document.getElementById('fileBadge');
-            badge.innerHTML = `<span class=\"file-badge\">${fileName} <button onclick=\"clearAttachment()\">×</button></span>`;
+            badge.innerHTML = `<span class="file-badge">${fileName} <button onclick="clearAttachment()">×</button></span>`;
             badge.style.display = 'block';
         }
 
@@ -504,11 +508,11 @@
             const messagesDiv = document.getElementById('messages');
             const messageId = 'typing-' + Date.now();
             const messageDiv = document.createElement('div');
-            messageDiv.className = 'message assistant';
+            messageDiv.className = 'message assistant typing-indicator-msg';
             messageDiv.id = messageId;
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
-            contentDiv.innerHTML = '<div class=\"typing-indicator\"><span></span><span></span><span></span></div>';
+            contentDiv.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
             messageDiv.appendChild(contentDiv);
             messagesDiv.appendChild(messageDiv);
             scrollToBottom();
@@ -516,12 +520,7 @@
         }
 
         function removeTypingIndicator(typingId) {
-            // Remove all typing indicators to be safe
-            document.querySelectorAll(\".typing-indicator\").forEach(el => el.closest(\".message\").remove());
-            const element = document.getElementById(typingId);
-            if (element) {
-                element.remove();
-            }
+            document.querySelectorAll(".typing-indicator-msg").forEach(el => el.remove());
         }
 
         function addMessage(role, content, save = true) {
