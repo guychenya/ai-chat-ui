@@ -165,6 +165,26 @@
             cursor: pointer;
             padding: 4px 8px;
         }
+        .add-btn:hover { background: #e5e5e5; border-radius: 4px; }
+        .file-input { display: none; }
+        .file-badge {
+            background: #007AFF;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .file-badge button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 0;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -183,7 +203,9 @@
     <div class="input-container">
         <div class="input-wrapper">
             <textarea class="input-field" id="messageInput" placeholder="Send a message" rows="1" onkeydown="handleKeyPress(event)"></textarea>
-            <button class="add-btn">+</button>
+            <input type="file" id="fileInput" class="file-input" accept=".txt,.md,.json,.csv,.log" onchange="handleFileSelect(event)">
+            <button class="add-btn" onclick="document.getElementById('fileInput').click()">+</button>
+            <div id="fileBadge" style="display: none;"></div>
             <select class="model-select" id="modelSelect">
                 <option value="phi3:mini">phi3:mini</option>
             </select>
@@ -195,6 +217,8 @@
     <script>
         const API_URL = 'http://157.173.126.133:8888';
         const API_KEY = 'sk-ai-7f9d2e8c4b6a1f3e5d8c9b2a4f7e1d6c3b8a5f2e9d7c4b1a6f3e8d5c2b9a7f4e1g';
+        let attachedFileContent = null;
+        let attachedFileName = null;
 
         function handleKeyPress(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -207,12 +231,44 @@
             document.getElementById('messages').style.display = 'none';
             document.getElementById('emptyState').style.display = 'flex';
             document.getElementById('messages').innerHTML = '';
+            clearAttachment();
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                attachedFileContent = e.target.result;
+                attachedFileName = file.name;
+                showFileBadge(file.name);
+            };
+            reader.readAsText(file);
+        }
+
+        function showFileBadge(fileName) {
+            const badge = document.getElementById('fileBadge');
+            badge.innerHTML = `<span class="file-badge">${fileName} <button onclick="clearAttachment()">×</button></span>`;
+            badge.style.display = 'block';
+        }
+
+        function clearAttachment() {
+            attachedFileContent = null;
+            attachedFileName = null;
+            document.getElementById('fileBadge').style.display = 'none';
+            document.getElementById('fileInput').value = '';
         }
 
         async function sendMessage() {
             const input = document.getElementById('messageInput');
-            const message = input.value.trim();
-            if (!message) return;
+            let message = input.value.trim();
+            
+            if (!message && !attachedFileContent) return;
+
+            if (attachedFileContent) {
+                message = `${message}\n\n[File: ${attachedFileName}]\n${attachedFileContent}`;
+            }
 
             document.getElementById('emptyState').style.display = 'none';
             document.getElementById('messages').style.display = 'flex';
@@ -220,6 +276,7 @@
             addMessage('user', message);
             input.value = '';
             input.style.height = 'auto';
+            clearAttachment();
 
             const sendBtn = document.getElementById('sendBtn');
             sendBtn.disabled = true;
