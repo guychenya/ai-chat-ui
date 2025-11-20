@@ -323,6 +323,7 @@
         let attachedFileContent = null;
         let attachedFileName = null;
         let currentChatId = null;
+        let isGenerating = false;
         let chats = JSON.parse(localStorage.getItem('chats') || '[]');
 
         // Drag and drop
@@ -385,6 +386,10 @@
         }
 
         function deleteChat(chatId, event) {
+            if (isGenerating && chatId === currentChatId) {
+                alert("Cannot delete chat while response is being generated");
+                return;
+            }
             event.stopPropagation();
             if (!confirm('Delete this chat?')) return;
             chats = chats.filter(c => c.id !== chatId);
@@ -494,6 +499,7 @@
 
             const sendBtn = document.getElementById('sendBtn');
             sendBtn.disabled = true;
+            isGenerating = true;
             
             const typingId = addTypingIndicator();
 
@@ -551,6 +557,7 @@
                 removeTypingIndicator(typingId);
                 addMessage('assistant', 'Error: ' + error.message);
             }
+            isGenerating = false;
             sendBtn.disabled = false;
         }
 
